@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+ <html lang="en">
+ <head>
+     <meta charset="UTF-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+     <title>📊 Live Stock Data</title>
+     <style>
+         body {
+             font-family: Arial, sans-serif;
+             text-align: center;
+             margin: 20px;
+         }
+         table {
+             width: 50%;
+             margin: auto;
+             border-collapse: collapse;
+         }
+         th, td {
+             border: 1px solid #ddd;
+             padding: 10px;
+             text-align: center;
+         }
+         th {
+             background-color: #4CAF50;
+             color: white;
+         }
+     </style>
+ </head>
+ <body>
+ 
+     <h2>📊 Live Stock Data from WebSocket</h2>
+     <table>
+         <thead>
+             <tr>
+                 <th>Stock</th>
+                 <th>Price ($)</th>
+             </tr>
+         </thead>
+         <tbody id="stockTable">
+             <!-- Data will be inserted here -->
+         </tbody>
+     </table>
+ 
+     <script>
+         // Establish WebSocket connection (Replace with your actual WebSocket URL)
+         const ws = new WebSocket("ws://localhost/ws"); // If hosted on Azure, update the URL accordingly
+         const token = "your_generated_jwt_token";  // Replace with the actual token
+         const wsUrl = `wss://my-fastapi-websocket-app.azurewebsites.net/ws?token=${token}`;
+         const socket = new WebSocket(wsUrl);
+ 
+         ws.onmessage = function(event) {
+             const stockData = JSON.parse(event.data);
+             const tableBody = document.getElementById("stockTable");
+             tableBody.innerHTML = ""; // Clear the table before updating
+         
+         socket.onopen = () => {
+             console.log("✅ Successfully connected to WebSocket");
+         };
+ 
+         socket.onmessage = (event) => {
+             try {
+                 const stockData = JSON.parse(event.data);
+                 const tableBody = document.getElementById("stockTable");
+                 tableBody.innerHTML = ""; // Clear the table before updating
+ 
+                 Object.keys(stockData).forEach(stock => {
+                     const row = document.createElement("tr");
+                     row.innerHTML = `<td>${stock}</td><td>${stockData[stock]}</td>`;
+                     tableBody.appendChild(row);
+                 });
+             } catch (error) {
+                 console.error("❌ Error parsing data:", error);
+             }
+         };
+ 
+         ws.onclose = function() {
+             console.log("WebSocket connection closed");
+         
+         socket.onerror = (error) => {
+             console.error("❌ WebSocket error:", error);
+         };
+ 
+         socket.onclose = () => {
+             console.log("🔌 WebSocket connection closed");
+         };
+     </script>
+ 
+ </body>
+ </html>
