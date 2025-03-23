@@ -1,0 +1,35 @@
+# Azure WebSocket Service Architecture Diagram
+
+1. Infrastructure
+
+- Terraform: Provisions Azure App Service & ACR.
+- Azure Container Registry (ACR): Stores the container images for deployment.
+- Azure App Service: Hosts the WebSocket container for scalability and high availability.
+- Scaling Rules: Configured based on active WebSocket connections.
+
+2. Secrets Management
+
+- Secrets Storage: Uses Azure Key Vault to securely store sensitive information.
+- Authentication & Authorization: Uses JWT to secure WebSocket connections.
+
+3. Build
+
+- FastAPI WebSocket Server: Implements real-time communication for stock price streaming.
+- Docker Container: Packages the WebSocket service for deployment.
+- Container Security: Uses Trivy to scan images before deployment.
+
+4. Deploy
+
+- GitHub Actions: Automates the deployment pipeline.
+- Trigger on Commit: Deploys the WebSocket service when code is pushed.
+- Auto-Restart: Ensures service recovery on failure.
+- Auto-Scaling: Scales resources dynamically based on demand.
+
+5. Monitoring & Alerting
+
+- Azure Monitor: Tracks application performance.
+- Alerts: Detects latency spikes, WebSocket failures, and downtime.
+
+6. Security & Compliance
+
+- Network Security: Implements Azure Private Link / NSGs to secure WebSocket traffic.
