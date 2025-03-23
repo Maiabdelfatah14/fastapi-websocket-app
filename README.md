@@ -88,7 +88,7 @@ terraform apply -auto-approve -var "subscription_id=${{ secrets.AZURE_SUBSCRIPTI
    => WebSocket failure alerts ,Latency alerts and Downtime alerts.
 
 
-![2.png](?raw=true)
+![2.png](https://github.com/Maiabdelfatah14/fastapi-websocket-app/blob/main/ScreenShots/2-.png?raw=true)
 
 
 ### then , can access app from browser
