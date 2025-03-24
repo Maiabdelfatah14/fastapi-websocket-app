@@ -3,6 +3,9 @@
 
 
 
+### 🔥 Architecture Flow:
+![3.png](https://github.com/Maiabdelfatah14/fastapi-websocket-app/blob/main/ScreenShots/Untitled%20Diagram.drawio.png?raw=true) 
+
 
 ## Project Details:
  
@@ -102,8 +105,6 @@ https://my-fastapi-websocket-app.azurewebsites.net/
 wss://my-fastapi-websocket-app.azurewebsites.net/ws
  ```
 
-### 🔥 Architecture Flow:
-![3.png](https://github.com/Maiabdelfatah14/fastapi-websocket-app/blob/main/ScreenShots/Untitled%20Diagram.drawio.png?raw=true)
 
 ## Contributors:
  
