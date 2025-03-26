@@ -21,6 +21,19 @@ resource "azurerm_container_registry" "my_acr" {
   }
 }
 
+# 🔹 app service 
+resource "azurerm_app_service" "fastapi_websocket" {
+  name                = "my-fastapi-websocket-app"
+  location            = azurerm_resource_group.myResourceGroupTR.location
+  resource_group_name = azurerm_resource_group.myResourceGroupTR.name
+  app_service_plan_id = azurerm_app_service_plan.myAppServicePlan.id
+
+  site_config {
+    always_on        = true  
+    health_check_path = "/"  
+  }
+}
+
 # 🔹 App Service Plan
 resource "azurerm_service_plan" "app_service_plan" {
   name                = var.app_service_plan_name
@@ -60,23 +73,6 @@ resource "azurerm_application_insights" "app_insights" {
   application_type    = "web"
 }
 
-# 🔹 Latency Alert (If response time > 2s)
-resource "azurerm_monitor_metric_alert" "latency_alert" {
-  name                = "latency-alert"
-  resource_group_name = azurerm_resource_group.my_rg.name
-  scopes              = [azurerm_linux_web_app.web_app.id]
-  description         = "Alert if latency is greater than 2 seconds"
-  severity           = 2
-
-  criteria {
-    metric_namespace = "Microsoft.Web/sites"
-    metric_name      = "AverageResponseTime"
-    aggregation      = "Average"
-    operator         = "GreaterThan"
-    threshold        = 2000  # 2 seconds
-  }
-}
-
 # 🔹 Create Monitor Action Group
 resource "azurerm_monitor_action_group" "alert_action" {
   name                = "alert-action-group"
@@ -89,6 +85,27 @@ resource "azurerm_monitor_action_group" "alert_action" {
   }
 }
 
+# 🔹 Latency Alert (If response time > 2s)
+resource "azurerm_monitor_metric_alert" "latency_alert" {
+  name                = "latency-alert"
+  resource_group_name = azurerm_resource_group.my_rg.name
+  scopes              = [azurerm_linux_web_app.web_app.id]
+  description         = "Alert if latency is greater than 2 seconds"
+  severity            = 2
+
+  criteria {
+    metric_namespace = "Microsoft.Web/sites"
+    metric_name      = "AverageResponseTime"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 2000  # 2 ثوانٍ
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.alert_action.id
+  }
+}
+ 
 # 🔹 WebSocket Failures Alert
 resource "azurerm_monitor_metric_alert" "websocket_failure_alert" {
   name                = "websocket-failure-alert"
@@ -124,6 +141,9 @@ resource "azurerm_monitor_metric_alert" "downtime_alert" {
     aggregation      = "Average"
     operator         = "GreaterThan"
     threshold        = 1
+  }
+ action {
+    action_group_id = azurerm_monitor_action_group.alert_action.id
   }
 }
 
@@ -228,7 +248,7 @@ resource "azurerm_network_security_rule" "allow_websocket_traffic" {
   direction                   = "Inbound"
   access                      = "Allow"
   protocol                    = "Tcp"
-  source_address_prefix       = "10.0.2.0/24"  # Set the correct Private Endpoint subnet
+  source_address_prefix       = "10.0.1.0/24"  # Set the correct Private Endpoint subnet
   source_port_range           = "*"
   destination_address_prefix  = "*"
   destination_port_range      = "443"
@@ -249,16 +269,4 @@ resource "azurerm_network_security_rule" "deny_all" {
   destination_port_range      = "*"
   resource_group_name         = azurerm_resource_group.my_rg.name
   network_security_group_name = azurerm_network_security_group.websocket_nsg.name
-}
-
-resource "azurerm_app_service" "fastapi_websocket" {
-  name                = "my-fastapi-websocket-app"
-  location            = azurerm_resource_group.myResourceGroupTR.location
-  resource_group_name = azurerm_resource_group.myResourceGroupTR.name
-  app_service_plan_id = azurerm_app_service_plan.myAppServicePlan.id
-
-  site_config {
-    always_on        = true  
-    health_check_path = "/"  
-  }
 }
