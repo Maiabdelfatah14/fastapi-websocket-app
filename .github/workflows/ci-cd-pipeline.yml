@@ -57,9 +57,9 @@ jobs:
                     -p ${{ secrets.AZURE_CLIENT_SECRET }} \
                     --tenant ${{ secrets.AZURE_TENANT_ID }}
         
-              - name: Show Account Info
-                run: |
-                  az account show --query "user.name"
+              # - name: Show Account Info
+              #   run: |
+              #     az account show --query "user.name"
         
               - name: Create Key Vault if not exists
                 run: |
@@ -100,9 +100,9 @@ jobs:
                   sleep 90
                   done
         
-              - name: Verify Role Assignment
-                run: |
-                  az role assignment list --assignee $SP_ID --scope /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/myResourceGroupTR/providers/Microsoft.KeyVault/vaults/KeyVaultSC23
+              # - name: Verify Role Assignment
+              #   run: |
+              #     az role assignment list --assignee $SP_ID --scope /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/myResourceGroupTR/providers/Microsoft.KeyVault/vaults/KeyVaultSC23
          
             
               - name: Add secrets to Key Vault
@@ -173,38 +173,24 @@ jobs:
                   run: |
                      ACR_PASSWORD=$(az acr credential show --name ${{ env.ACR_USERNAME }} --query "passwords[0].value" -o tsv)
                      echo $ACR_PASSWORD | docker login myacrTR202.azurecr.io -u ${{ env.ACR_USERNAME }} --password-stdin
-       
-                 # 🔹 Build and push Docker image to ACR
-                - name: Build and push Docker image to ACR
-                  run: |
-                   docker build -t myacrTR202.azurecr.io/fastapi-websocket:latest .
-                   docker push myacrTR202.azurecr.io/fastapi-websocket:latest
-               
+
+                # 🔹 Assign Azure Roles (يجب تنفيذها قبل أي محاولة لدفع الصورة إلى ACR)
                 - name: Assign Azure Roles
                   run: |
                     az role assignment create --assignee ${{ secrets.AZURE_CLIENT_ID }} \
                       --role "User Access Administrator" \
                       --scope /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}
-                    
+                
                     az role assignment create --assignee ${{ secrets.AZURE_CLIENT_ID }} \
                       --role "AcrPush" \
                       --scope /subscriptions/${{ secrets.AZURE_SUBSCRIPTION_ID }}/resourceGroups/myResourceGroupTR/providers/Microsoft.ContainerRegistry/registries/myacrTR202
-    
-                - name: Azure Login
-                  uses: azure/login@v1
-                  with:
-                    client-id: ${{ secrets.AZURE_CLIENT_ID }}
-                    tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-                    subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-         
-                - name: Run Trivy vulnerability scanner
-                  uses: aquasecurity/trivy-action@master
-                  with:
-                    image-ref: "${{ env.ACR_USERNAME }}.azurecr.io/fastapi-websocket:latest"
-                    format: "table"
-                    exit-code: 0  
-                    severity: "CRITICAL,HIGH"
-    
+                
+                # 🔹 Build and push Docker image to ACR
+                - name: Build and push Docker image to ACR
+                  run: |
+                    docker build -t myacrTR202.azurecr.io/fastapi-websocket:latest .
+                    docker push myacrTR202.azurecr.io/fastapi-websocket:latest
+        
    deploy:
                     runs-on: ubuntu-latest
                     needs: build
@@ -218,19 +204,26 @@ jobs:
                           client-id: ${{ secrets.AZURE_CLIENT_ID }}
                           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
                           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-                          
-    
-                      - name: Run Trivy Scan (Allow Failures)
-                        run: |
-                          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
-                            aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL \
-                            myacrTR202.azurecr.io/fastapi-websocket:latest | tee trivy-report.txt
-                
-                      - name: Upload Trivy Scan Report
-                        uses: actions/upload-artifact@v4
+
+                      - name: Run Trivy vulnerability scanner
+                        uses: aquasecurity/trivy-action@master
                         with:
-                          name: trivy-scan-report
-                          path: trivy-report.txt
+                          image-ref: "${{ env.ACR_USERNAME }}.azurecr.io/fastapi-websocket:latest"
+                          format: "table"
+                          exit-code: 0  
+                          severity: "CRITICAL,HIGH"
+    
+                      # - name: Run Trivy Scan (Allow Failures)
+                      #   run: |
+                      #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                      #       aquasec/trivy image --exit-code 0 --severity HIGH,CRITICAL \
+                      #       myacrTR202.azurecr.io/fastapi-websocket:latest | tee trivy-report.txt
+                
+                      # - name: Upload Trivy Scan Report
+                      #   uses: actions/upload-artifact@v4
+                      #   with:
+                      #     name: trivy-scan-report
+                      #     path: trivy-report.txt
   
                       - name: Retrieve and Display Stored Secrets
                         run: |
